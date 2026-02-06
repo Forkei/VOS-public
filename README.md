@@ -52,7 +52,7 @@ A proactive, multi-agent AI operating system. VOS orchestrates specialized AI ag
 
 | Layer | Technology |
 |---|---|
-| Frontend | Flutter (mobile + desktop) |
+| Frontend | [Flutter (mobile + desktop)](https://github.com/RomanSlack/VOS_frontend) |
 | API | FastAPI (Python) |
 | Messaging | RabbitMQ (event-driven) |
 | LLM | Google Gemini |
@@ -164,6 +164,15 @@ if __name__ == "__main__":
 ```
 
 Each agent runs as its own Docker container, communicates via RabbitMQ, and can use any combination of tools. See the existing agents in `services/agents/` for examples.
+
+## Related Repos
+
+- **[VOS Frontend](https://github.com/RomanSlack/VOS_frontend)** — Flutter client for mobile and desktop
+
+## Contributors
+
+- **[Forkei](https://github.com/Forkei)** — Backend, agents, SDK, voice/call system, infrastructure
+- **[Roman Slack](https://github.com/RomanSlack)** — Frontend, Flutter client
 
 ## License
 
