@@ -1,0 +1,38 @@
+tunnel: 08b965cf-bcdf-4e59-90fd-11defb8f2118
+credentials-file: /etc/cloudflared/08b965cf-bcdf-4e59-90fd-11defb8f2118.json
+
+ingress:
+  # Main website - Flutter Frontend
+  - hostname: jarvos.dev
+    service: http://flutter_frontend:80
+
+  # API subdomain - Twilio Media Stream WebSocket (must be before general API)
+  - hostname: api.jarvos.dev
+    path: /twilio/media-stream/*
+    service: http://twilio_gateway:8200
+
+  # API subdomain - Twilio Webhooks (voice/incoming, voice/outgoing, status)
+  - hostname: api.jarvos.dev
+    path: /twilio/*
+    service: http://twilio_gateway:8200
+
+  # API subdomain - Voice WebSocket (must be before general API)
+  - hostname: api.jarvos.dev
+    path: /ws/voice/*
+    service: http://voice_gateway:8100
+
+  # API subdomain - Voice endpoints
+  - hostname: api.jarvos.dev
+    path: /voice/*
+    service: http://voice_gateway:8100
+
+  # API subdomain - General API
+  - hostname: api.jarvos.dev
+    service: http://api_gateway:8000
+
+  # RabbitMQ Management UI (password protected)
+  - hostname: rabbitmq.jarvos.dev
+    service: http://rabbitmq:15672
+
+  # Catch-all rule (must be last)
+  - service: http_status:404

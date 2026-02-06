@@ -1,0 +1,31 @@
+# FastAPI and server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==12.0
+python-multipart==0.0.6
+
+# Data validation
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Twilio
+twilio==8.10.0
+
+# Messaging
+aio-pika==9.3.0
+
+# Database
+asyncpg==0.29.0
+
+# Audio processing
+pydub==0.25.1
+# audioop is deprecated in Python 3.11, removed in 3.13
+# audioop-lts provides compatibility for Python 3.13+
+audioop-lts==0.2.1;python_version>="3.13"
+
+# HTTP client
+httpx==0.25.2
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0

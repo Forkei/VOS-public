@@ -1,0 +1,146 @@
+{
+  "manifestVersion": "1.0.0",
+  "app": {
+    "id": "com.vos.browser",
+    "name": "browser",
+    "displayName": "Browser",
+    "version": "1.0.0",
+    "description": "AI-powered browser automation for web navigation, interaction, and data extraction",
+    "icon": {
+      "type": "material",
+      "name": "language",
+      "color": "#2196F3"
+    },
+    "category": "utilities",
+    "author": "VOS Team",
+    "license": "proprietary"
+  },
+  "type": "native",
+  "capabilities": {
+    "offline": false,
+    "multiInstance": true,
+    "backgroundProcessing": true,
+    "notifications": true,
+    "voiceControl": true,
+    "agentIntegration": true
+  },
+  "ui": {
+    "type": "native",
+    "entryPoint": "BrowserPage",
+    "defaultSize": { "width": 800, "height": 600 },
+    "minSize": { "width": 400, "height": 300 },
+    "supportsFullscreen": true,
+    "accentColor": "#2196F3"
+  },
+  "backend": {
+    "agentId": "browser_agent",
+    "containerImage": "vos_browser_agent:latest",
+    "port": 8020,
+    "healthEndpoint": "/health"
+  },
+  "readApis": [
+    {
+      "id": "current_session",
+      "description": "Current browser session state",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "session_id": { "type": "string" },
+          "current_url": { "type": "string" },
+          "page_title": { "type": "string" },
+          "is_active": { "type": "boolean" }
+        }
+      },
+      "events": ["session_updated"]
+    },
+    {
+      "id": "navigation_history",
+      "description": "Browser navigation history",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "url": { "type": "string" },
+            "title": { "type": "string" },
+            "timestamp": { "type": "string" },
+            "screenshot": { "type": "string" }
+          }
+        }
+      },
+      "events": ["navigation_completed"]
+    },
+    {
+      "id": "task_results",
+      "description": "Results from browser automation tasks",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "task_id": { "type": "string" },
+            "task": { "type": "string" },
+            "result": { "type": "string" },
+            "status": { "type": "string" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      },
+      "events": ["task_completed"]
+    }
+  ],
+  "actionApis": [
+    {
+      "id": "browser_use",
+      "description": "Automate browser interactions using AI - navigate, click, fill forms, extract data",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "task": { "type": "string", "description": "Natural language description of the browser task", "required": true },
+          "max_steps": { "type": "integer", "description": "Maximum number of browser actions (default: 10, max: 50)", "default": 10 },
+          "capture_screenshot": { "type": "boolean", "description": "Capture screenshot of final result", "default": true }
+        }
+      },
+      "sideEffects": ["current_session", "navigation_history", "task_results"]
+    },
+    {
+      "id": "browser_navigate",
+      "description": "Navigate directly to a URL and capture screenshot",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "description": "URL to navigate to (must start with http:// or https://)", "required": true },
+          "wait_ms": { "type": "integer", "description": "Milliseconds to wait for page to load", "default": 3000 },
+          "full_page": { "type": "boolean", "description": "Capture full page screenshot", "default": false }
+        }
+      },
+      "sideEffects": ["current_session", "navigation_history"]
+    },
+    {
+      "id": "get_screenshot",
+      "description": "Capture screenshot of current page",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "full_page": { "type": "boolean", "description": "Capture full page screenshot", "default": false }
+        }
+      },
+      "sideEffects": []
+    },
+    {
+      "id": "clear_history",
+      "description": "Clear navigation history",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "sideEffects": ["navigation_history"]
+    }
+  ],
+  "schemas": {},
+  "specialComponents": [],
+  "permissions": [
+    "agent.communicate",
+    "network.access"
+  ]
+}

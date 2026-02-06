@@ -1,0 +1,717 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: vos_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vos_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-vos_database}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./services/api_gateway/app/sql/vos_sdk_schema.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./services/api_gateway/app/sql/twilio_schema.sql:/docker-entrypoint-initdb.d/02_twilio.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vos_user -d vos_database"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - vos_network
+
+  weaviate:
+    image: semitechnologies/weaviate:1.28.1
+    container_name: vos_weaviate
+    environment:
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      # TODO: Re-enable API key auth after testing (requires proper key format)
+      # AUTHENTICATION_APIKEY_ENABLED: 'true'
+      # AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${WEAVIATE_API_KEY}
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      CLUSTER_HOSTNAME: 'node1'
+      DEFAULT_VECTORIZER_MODULE: 'none'
+      ENABLE_MODULES: 'text2vec-openai,text2vec-cohere,text2vec-huggingface,ref2vec-centroid,generative-openai,qna-openai'
+      AUTOSCHEMA_ENABLED: 'false'
+      DISK_USE_WARNING_PERCENTAGE: '97'
+      DISK_USE_READONLY_PERCENTAGE: '98'
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    volumes:
+      - ./_data/weaviate:/var/lib/weaviate
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 60s
+      timeout: 20s
+      retries: 5
+      start_period: 120s
+    networks:
+      - vos_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: vos_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-vos_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-vos_vhost}
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management UI port
+    volumes:
+      - ./_data/rabbitmq:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - vos_network
+
+  api_gateway:
+    build:
+      context: ./services/api_gateway
+      dockerfile: Dockerfile
+    container_name: vos_api_gateway
+    env_file:
+      - ./services/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-vos_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-vos_database}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-vos_user}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST:-vos_vhost}
+      - WEAVIATE_URL=http://weaviate:8080
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      - API_KEYS=${API_KEYS}
+      # JWT_SECRET loaded from env_file
+      - VALID_USERS=${VALID_USERS}
+      # ALLOWED_ORIGINS loaded from env_file
+      - ALLOWED_HOSTS=jarvos.dev,app.jarvos.dev,api.jarvos.dev,localhost,127.0.0.1,api_gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/api_gateway:/app
+      - ./services/tools:/app/tools
+      - ./services/agents:/app/services/agents:ro
+      - shared_data:/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - vos_network
+
+  voice_gateway:
+    build:
+      context: ./services/voice_gateway
+      dockerfile: Dockerfile
+    container_name: vos_voice_gateway
+    env_file:
+      - ./services/.env
+    environment:
+      # Authentication (loaded from env_file)
+      # Voice Services - ASSEMBLYAI_API_KEY, ELEVENLABS_VOICE_ID loaded from env_file
+      # API Gateway Configuration
+      - API_GATEWAY_URL=http://api_gateway:8000
+      # RabbitMQ Configuration
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-vos_user}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST:-vos_vhost}
+      - RABBITMQ_EXCHANGE=vos_exchange
+      # PostgreSQL Configuration
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-vos_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-vos_database}
+      # Service Configuration
+      - SERVICE_NAME=voice_gateway
+      - SERVICE_VERSION=1.0.0
+      # LOG_LEVEL loaded from env_file
+      - SESSION_TIMEOUT=300
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./services/voice_gateway:/app
+      - shared_data:/shared
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8100/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - vos_network
+
+  twilio_gateway:
+    build:
+      context: ./services/twilio_gateway
+      dockerfile: Dockerfile
+    container_name: vos_twilio_gateway
+    env_file:
+      - ./services/.env
+    environment:
+      # Twilio Configuration
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      # Webhook Configuration
+      - WEBHOOK_BASE_URL=https://api.jarvos.dev
+      # Internal Services
+      - API_GATEWAY_URL=http://api_gateway:8000
+      - VOICE_GATEWAY_URL=http://voice_gateway:8100
+      # RabbitMQ Configuration
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER:-vos_user}:${RABBITMQ_PASSWORD}@rabbitmq:5672/${RABBITMQ_VHOST:-vos_vhost}
+      - RABBITMQ_EXCHANGE=vos_exchange
+      # PostgreSQL Configuration
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-vos_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-vos_database}
+      # Service Configuration
+      - SERVICE_NAME=twilio_gateway
+      - SERVICE_VERSION=1.0.0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVIRONMENT=development
+    ports:
+      - "8200:8200"
+    volumes:
+      - ./services/twilio_gateway:/app
+      - shared_data:/shared
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+      voice_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - vos_network
+
+  primary_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/primary_agent/Dockerfile
+    container_name: vos_primary_agent
+    env_file:
+      - ./services/.env  # Use centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Agent identification
+      - AGENT_NAME=primary_agent
+      - AGENT_DISPLAY_NAME=Primary Agent
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - PRIMARY_AGENT_MAX_CONVERSATION_MESSAGES=${PRIMARY_AGENT_MAX_CONVERSATION_MESSAGES:-0}
+    volumes:
+      - ./services/agents/primary_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8002:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      weaviate:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  weather_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/weather_agent/Dockerfile
+    container_name: vos_weather_agent
+    env_file:
+      - ./services/.env  # Centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Agent identification
+      - AGENT_NAME=weather_agent
+      - AGENT_DISPLAY_NAME=Weather Service
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - WEATHER_AGENT_MAX_CONVERSATION_MESSAGES=${WEATHER_AGENT_MAX_CONVERSATION_MESSAGES:-10}
+    volumes:
+      - ./services/agents/weather_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8003:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  search_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/search_agent/Dockerfile
+    container_name: vos_search_agent
+    env_file:
+      - ./services/.env  # Centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      - API_GATEWAY_URL=http://api_gateway:8000
+      - WEBHOOK_BASE_URL=https://api.jarvos.dev
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Search-specific configuration
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+      # Agent identification
+      - AGENT_NAME=search_agent
+      - AGENT_DISPLAY_NAME=Search & Research Service
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - SEARCH_AGENT_MAX_CONVERSATION_MESSAGES=${SEARCH_AGENT_MAX_CONVERSATION_MESSAGES:-15}
+    volumes:
+      - ./services/agents/search_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8004:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  calendar_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/calendar_agent/Dockerfile
+    container_name: vos_calendar_agent
+    env_file:
+      - ./services/.env  # Centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      - API_GATEWAY_URL=http://api_gateway:8000
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Agent identification
+      - AGENT_NAME=calendar_agent
+      - AGENT_DISPLAY_NAME=Calendar & Scheduling Service
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - CALENDAR_AGENT_MAX_CONVERSATION_MESSAGES=${CALENDAR_AGENT_MAX_CONVERSATION_MESSAGES:-15}
+    volumes:
+      - ./services/agents/calendar_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8005:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  scheduler_service:
+    build:
+      context: .
+      dockerfile: ./services/scheduler_service/Dockerfile
+    container_name: vos_scheduler_service
+    environment:
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # API Gateway Configuration
+      - API_GATEWAY_URL=http://api_gateway:8000
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  notes_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/notes_agent/Dockerfile
+    container_name: vos_notes_agent
+    env_file:
+      - ./services/.env  # Centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      - API_GATEWAY_URL=http://api_gateway:8000
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Agent identification
+      - AGENT_NAME=notes_agent
+      - AGENT_DISPLAY_NAME=Notes & Documents Service
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - NOTES_AGENT_MAX_CONVERSATION_MESSAGES=${NOTES_AGENT_MAX_CONVERSATION_MESSAGES:-15}
+      # Google Cloud Storage Configuration
+      - GCS_BUCKET_NAME=${GCS_BUCKET_NAME:-vos-notes-storage}
+      - GCS_PROJECT_ID=${GCS_PROJECT_ID}
+      - GCS_CREDENTIALS_JSON=${GCS_CREDENTIALS_JSON}
+      - GCS_STORAGE_THRESHOLD=${GCS_STORAGE_THRESHOLD:-100000}
+    volumes:
+      - ./services/agents/notes_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8006:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  calculator_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/calculator_agent/Dockerfile
+    container_name: vos_calculator_agent
+    env_file:
+      - ./services/.env  # Centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      - API_GATEWAY_URL=http://api_gateway:8000
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Agent identification
+      - AGENT_NAME=calculator_agent
+      - AGENT_DISPLAY_NAME=Calculator & Math Service
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - CALCULATOR_AGENT_MAX_CONVERSATION_MESSAGES=${CALCULATOR_AGENT_MAX_CONVERSATION_MESSAGES:-10}
+    volumes:
+      - ./services/agents/calculator_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8007:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  browser_agent:
+    build:
+      context: .
+      dockerfile: ./services/agents/browser_agent/Dockerfile
+    container_name: vos_browser_agent
+    env_file:
+      - ./services/.env  # Centralized environment file
+    environment:
+      # RabbitMQ Configuration
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=${RABBITMQ_USER:-vos_user}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_VHOST=${RABBITMQ_VHOST:-vos_vhost}
+      # Database Configuration
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${POSTGRES_DB:-vos_database}
+      - DATABASE_USER=${POSTGRES_USER:-vos_user}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD}
+      # API Gateway Configuration
+      - API_GATEWAY_HOST=api_gateway
+      - API_GATEWAY_PORT=8000
+      - API_GATEWAY_URL=http://api_gateway:8000
+      # Weaviate Configuration
+      - WEAVIATE_HOST=weaviate
+      - WEAVIATE_PORT=8080
+      - ENVIRONMENT=development
+      - SENTRY_DSN=${SENTRY_DSN}
+      # Agent identification
+      - AGENT_NAME=browser_agent
+      - AGENT_DISPLAY_NAME=Browser Automation Service
+      # Message history limits
+      - MAX_CONVERSATION_MESSAGES=${MAX_CONVERSATION_MESSAGES:-0}
+      - BROWSER_AGENT_MAX_CONVERSATION_MESSAGES=${BROWSER_AGENT_MAX_CONVERSATION_MESSAGES:-15}
+    volumes:
+      - ./services/agents/browser_agent:/app
+      - ./services/tools:/app/tools
+      - ./services/agents/shared:/app/shared
+      - shared_data:/shared
+    ports:
+      - "8008:8080"  # Metrics endpoint
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      api_gateway:
+        condition: service_healthy
+    restart: unless-stopped
+    # Increase shared memory size for Chromium
+    shm_size: '2gb'
+    networks:
+      - vos_network
+
+  adminer:
+    image: adminer
+    container_name: vos_adminer
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vos_prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+  flutter_frontend:
+    build:
+      context: ../VOS_frontend
+      dockerfile: Dockerfile
+    container_name: vos_flutter_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api_gateway
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+
+  app_registry:
+    build:
+      context: ./services/app_registry
+      dockerfile: Dockerfile
+    container_name: vos_app_registry
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - vos_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: vos_cloudflared
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflare-tunnel-config.yml:/etc/cloudflared/config.yml:ro
+      - ./cloudflared:/etc/cloudflared
+    depends_on:
+      - api_gateway
+      - flutter_frontend
+    restart: unless-stopped
+    networks:
+      - vos_network
+
+networks:
+  vos_network:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  shared_data:
+  postgres_data:

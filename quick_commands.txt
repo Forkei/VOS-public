@@ -1,0 +1,4 @@
+docker-compose -f docker-compose.backend-only.yml up -d
+
+flutter pub get
+flutter run -d emulator-5554

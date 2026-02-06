@@ -1,0 +1,24 @@
+# Prometheus Configuration for VOS
+
+global:
+  scrape_interval: 15s      # Scrape metrics every 15 seconds
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+  scrape_timeout: 10s
+
+# Scrape configurations
+scrape_configs:
+  # VOS API Gateway
+  - job_name: 'vos-api-gateway'
+    static_configs:
+      - targets: ['api_gateway:8000']
+        labels:
+          service: 'api_gateway'
+          environment: 'development'
+
+  # VOS Agents
+  - job_name: 'vos-agents'
+    static_configs:
+      - targets: ['primary_agent:8080', 'weather_agent:8080', 'search_agent:8080', 'calendar_agent:8080', 'notes_agent:8080', 'calculator_agent:8080']
+        labels:
+          service: 'agents'
+          environment: 'development'

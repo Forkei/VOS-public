@@ -1,0 +1,80 @@
+VOS - Source Available License
+
+Copyright (c) 2025-2026 Forke (VOS Project)
+
+All rights reserved.
+
+
+TERMS AND CONDITIONS
+
+1. DEFINITIONS
+
+   "Software" means the VOS (Virtual Operating System) source code,
+   documentation, and associated files in this repository.
+
+   "Commercial Use" means any use of the Software that is primarily
+   intended for or directed toward commercial advantage or monetary
+   compensation. This includes, but is not limited to: selling the
+   Software, offering the Software as a paid service, using the Software
+   to provide paid services to third parties, or incorporating the
+   Software into a commercial product.
+
+   "Non-Commercial Use" means any use of the Software that is not
+   Commercial Use. This includes personal projects, academic research,
+   education, and use by non-profit organizations.
+
+   "Author" means the copyright holder(s) listed above.
+
+
+2. NON-COMMERCIAL USE
+
+   Permission is hereby granted, free of charge, to any person obtaining
+   a copy of this Software, to use, copy, modify, and distribute the
+   Software for Non-Commercial Use, subject to the following conditions:
+
+   a. Attribution: You must give appropriate credit to the Author,
+      provide a link to this repository, and indicate if changes were
+      made. You must do so in any reasonable manner, but not in any way
+      that suggests the Author endorses you or your use.
+
+   b. Share-Alike: If you modify and distribute the Software, you must
+      distribute your modifications under these same license terms.
+
+   c. License Notice: You must include a copy of this license in all
+      copies or substantial portions of the Software.
+
+
+3. COMMERCIAL USE
+
+   Commercial Use of the Software requires prior written permission
+   from the Author. To obtain a commercial license, contact the Author
+   to discuss terms.
+
+   Unauthorized Commercial Use of the Software is strictly prohibited.
+
+
+4. CONTRIBUTIONS
+
+   By submitting a contribution (pull request, patch, or other
+   modification) to this repository, you agree to license your
+   contribution under the same terms as this license and you assign
+   the Author a non-exclusive, royalty-free, worldwide license to use,
+   modify, and distribute your contribution as part of the Software.
+
+
+5. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+   DEALINGS IN THE SOFTWARE.
+
+
+6. TERMINATION
+
+   This license is automatically terminated if you violate any of its
+   terms. Upon termination, you must destroy all copies of the Software
+   in your possession.

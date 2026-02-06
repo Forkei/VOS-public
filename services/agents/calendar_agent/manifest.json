@@ -1,0 +1,250 @@
+{
+  "manifestVersion": "1.0.0",
+  "app": {
+    "id": "com.vos.calendar",
+    "name": "calendar",
+    "displayName": "Calendar",
+    "version": "1.0.0",
+    "description": "Manage calendar events, reminders, and scheduling with conflict detection",
+    "icon": {
+      "type": "material",
+      "name": "calendar_today_outlined",
+      "color": "#4CAF50"
+    },
+    "category": "productivity",
+    "author": "VOS Team",
+    "license": "proprietary"
+  },
+  "type": "native",
+  "capabilities": {
+    "offline": true,
+    "multiInstance": false,
+    "backgroundProcessing": true,
+    "notifications": true,
+    "voiceControl": true,
+    "agentIntegration": true
+  },
+  "ui": {
+    "type": "native",
+    "entryPoint": "CalendarPage",
+    "defaultSize": { "width": 600, "height": 500 },
+    "minSize": { "width": 400, "height": 350 },
+    "supportsFullscreen": true,
+    "accentColor": "#4CAF50"
+  },
+  "backend": {
+    "agentId": "calendar_agent",
+    "containerImage": "vos_calendar_agent:latest",
+    "port": 8018,
+    "healthEndpoint": "/health",
+    "database": {
+      "type": "postgres",
+      "tables": ["calendar_events", "reminders"],
+      "migrations": "migrations/"
+    }
+  },
+  "readApis": [
+    {
+      "id": "events_list",
+      "description": "List of calendar events",
+      "schema": {
+        "type": "array",
+        "items": { "$ref": "#/schemas/CalendarEvent" }
+      },
+      "events": ["event_created", "event_updated", "event_deleted"]
+    },
+    {
+      "id": "current_event",
+      "description": "Currently selected/viewed event",
+      "schema": { "$ref": "#/schemas/CalendarEvent" },
+      "events": ["event_selected", "event_opened"]
+    },
+    {
+      "id": "reminders_list",
+      "description": "List of reminders",
+      "schema": {
+        "type": "array",
+        "items": { "$ref": "#/schemas/Reminder" }
+      },
+      "events": ["reminder_created", "reminder_updated", "reminder_deleted"]
+    },
+    {
+      "id": "selected_date",
+      "description": "Currently selected date on calendar",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "events": { "type": "array" }
+        }
+      },
+      "events": ["date_selected"]
+    }
+  ],
+  "actionApis": [
+    {
+      "id": "create_event",
+      "description": "Create a new calendar event",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "required": true },
+          "description": { "type": "string" },
+          "start_time": { "type": "string", "format": "date-time", "required": true },
+          "end_time": { "type": "string", "format": "date-time", "required": true },
+          "all_day": { "type": "boolean", "default": false },
+          "location": { "type": "string" },
+          "recurrence_rule": { "type": "string" },
+          "color": { "type": "string" }
+        }
+      },
+      "returns": { "$ref": "#/schemas/CalendarEvent" },
+      "sideEffects": ["events_list"]
+    },
+    {
+      "id": "list_events",
+      "description": "List calendar events within a date range",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "start_date": { "type": "string", "format": "date", "required": true },
+          "end_date": { "type": "string", "format": "date", "required": true },
+          "expand_recurring": { "type": "boolean", "default": true }
+        }
+      },
+      "sideEffects": ["events_list"]
+    },
+    {
+      "id": "update_event",
+      "description": "Update an existing calendar event",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "event_id": { "type": "integer", "required": true },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "start_time": { "type": "string", "format": "date-time" },
+          "end_time": { "type": "string", "format": "date-time" },
+          "all_day": { "type": "boolean" },
+          "location": { "type": "string" },
+          "color": { "type": "string" }
+        }
+      },
+      "sideEffects": ["events_list", "current_event"]
+    },
+    {
+      "id": "delete_event",
+      "description": "Delete a calendar event",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "event_id": { "type": "integer", "required": true }
+        }
+      },
+      "sideEffects": ["events_list", "current_event"]
+    },
+    {
+      "id": "create_reminder",
+      "description": "Create a new reminder",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "required": true },
+          "remind_at": { "type": "string", "format": "date-time", "required": true },
+          "notes": { "type": "string" },
+          "priority": { "type": "string", "enum": ["low", "medium", "high"] }
+        }
+      },
+      "returns": { "$ref": "#/schemas/Reminder" },
+      "sideEffects": ["reminders_list"]
+    },
+    {
+      "id": "list_reminders",
+      "description": "List reminders",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "include_completed": { "type": "boolean", "default": false },
+          "upcoming_only": { "type": "boolean", "default": false }
+        }
+      },
+      "sideEffects": ["reminders_list"]
+    },
+    {
+      "id": "update_reminder",
+      "description": "Update an existing reminder",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reminder_id": { "type": "integer", "required": true },
+          "title": { "type": "string" },
+          "remind_at": { "type": "string", "format": "date-time" },
+          "completed": { "type": "boolean" },
+          "notes": { "type": "string" }
+        }
+      },
+      "sideEffects": ["reminders_list"]
+    },
+    {
+      "id": "delete_reminder",
+      "description": "Delete a reminder",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "reminder_id": { "type": "integer", "required": true }
+        }
+      },
+      "sideEffects": ["reminders_list"]
+    },
+    {
+      "id": "select_date",
+      "description": "Select a date on the calendar",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date", "required": true }
+        }
+      },
+      "sideEffects": ["selected_date"]
+    }
+  ],
+  "schemas": {
+    "CalendarEvent": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "start_time": { "type": "string", "format": "date-time" },
+        "end_time": { "type": "string", "format": "date-time" },
+        "all_day": { "type": "boolean" },
+        "location": { "type": "string" },
+        "recurrence_rule": { "type": "string" },
+        "color": { "type": "string" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Reminder": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "remind_at": { "type": "string", "format": "date-time" },
+        "completed": { "type": "boolean" },
+        "notes": { "type": "string" },
+        "priority": { "type": "string" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "specialComponents": ["calendar_view"],
+  "permissions": [
+    "storage.read",
+    "storage.write",
+    "notifications.send",
+    "agent.communicate"
+  ]
+}

@@ -1,0 +1,154 @@
+{
+  "manifestVersion": "1.0.0",
+  "app": {
+    "id": "com.vos.calculator",
+    "name": "calculator",
+    "displayName": "Calculator",
+    "version": "1.0.0",
+    "description": "Advanced calculator with math, statistics, and unit conversions",
+    "icon": {
+      "type": "material",
+      "name": "calculate_outlined",
+      "color": "#9C27B0"
+    },
+    "category": "utilities",
+    "author": "VOS Team",
+    "license": "proprietary"
+  },
+  "type": "native",
+  "capabilities": {
+    "offline": true,
+    "multiInstance": true,
+    "backgroundProcessing": false,
+    "notifications": false,
+    "voiceControl": true,
+    "agentIntegration": true
+  },
+  "ui": {
+    "type": "native",
+    "entryPoint": "CalculatorPage",
+    "defaultSize": { "width": 350, "height": 500 },
+    "minSize": { "width": 280, "height": 400 },
+    "supportsFullscreen": false,
+    "accentColor": "#9C27B0"
+  },
+  "backend": {
+    "agentId": "calculator_agent",
+    "containerImage": "vos_calculator_agent:latest",
+    "port": 8019,
+    "healthEndpoint": "/health"
+  },
+  "readApis": [
+    {
+      "id": "current_result",
+      "description": "Current calculation result",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "expression": { "type": "string" },
+          "result": { "type": "number" },
+          "formatted": { "type": "string" }
+        }
+      },
+      "events": ["calculation_completed"]
+    },
+    {
+      "id": "history",
+      "description": "Calculation history",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "expression": { "type": "string" },
+            "result": { "type": "number" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      },
+      "events": ["history_updated"]
+    }
+  ],
+  "actionApis": [
+    {
+      "id": "calculate",
+      "description": "Perform basic arithmetic calculation",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "operation": { "type": "string", "enum": ["add", "subtract", "multiply", "divide", "power", "sqrt", "modulo"], "required": true },
+          "a": { "type": "number", "required": true },
+          "b": { "type": "number" }
+        }
+      },
+      "sideEffects": ["current_result", "history"]
+    },
+    {
+      "id": "advanced_math",
+      "description": "Perform advanced mathematical operations",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "operation": { "type": "string", "enum": ["sin", "cos", "tan", "asin", "acos", "atan", "log", "log10", "exp", "abs", "floor", "ceil", "round", "factorial"], "required": true },
+          "value": { "type": "number", "required": true },
+          "use_radians": { "type": "boolean", "default": true }
+        }
+      },
+      "sideEffects": ["current_result", "history"]
+    },
+    {
+      "id": "statistics",
+      "description": "Perform statistical calculations",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "operation": { "type": "string", "enum": ["mean", "median", "mode", "std", "variance", "min", "max", "sum", "count"], "required": true },
+          "values": { "type": "array", "items": { "type": "number" }, "required": true }
+        }
+      },
+      "sideEffects": ["current_result", "history"]
+    },
+    {
+      "id": "convert_unit",
+      "description": "Convert between units",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "number", "required": true },
+          "from_unit": { "type": "string", "required": true },
+          "to_unit": { "type": "string", "required": true },
+          "category": { "type": "string", "enum": ["length", "mass", "temperature", "volume", "speed", "time", "area"] }
+        }
+      },
+      "sideEffects": ["current_result", "history"]
+    },
+    {
+      "id": "random_number",
+      "description": "Generate random numbers",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["uniform", "integer", "normal"], "default": "uniform" },
+          "min": { "type": "number", "default": 0 },
+          "max": { "type": "number", "default": 1 },
+          "count": { "type": "integer", "default": 1 }
+        }
+      },
+      "sideEffects": ["current_result"]
+    },
+    {
+      "id": "clear_history",
+      "description": "Clear calculation history",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "sideEffects": ["history"]
+    }
+  ],
+  "schemas": {},
+  "specialComponents": [],
+  "permissions": [
+    "agent.communicate"
+  ]
+}

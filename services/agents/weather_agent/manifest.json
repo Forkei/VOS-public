@@ -1,0 +1,300 @@
+{
+  "manifestVersion": "1.0.0",
+  "app": {
+    "id": "com.vos.weather",
+    "name": "weather",
+    "displayName": "Weather",
+    "version": "1.0.0",
+    "description": "Real-time weather information, forecasts, and air quality data",
+    "icon": {
+      "type": "material",
+      "name": "wb_sunny_outlined",
+      "color": "#2196F3"
+    },
+    "category": "utilities",
+    "author": "VOS Team",
+    "license": "proprietary"
+  },
+  "type": "native",
+  "capabilities": {
+    "offline": false,
+    "multiInstance": false,
+    "backgroundProcessing": true,
+    "notifications": true,
+    "voiceControl": true,
+    "agentIntegration": true
+  },
+  "ui": {
+    "type": "native",
+    "entryPoint": "WeatherPage",
+    "defaultSize": { "width": 400, "height": 500 },
+    "minSize": { "width": 300, "height": 400 },
+    "supportsFullscreen": true,
+    "accentColor": "#2196F3"
+  },
+  "backend": {
+    "agentId": "weather_agent",
+    "containerImage": "vos_weather_agent:latest",
+    "port": 8017,
+    "healthEndpoint": "/health",
+    "externalServices": ["openweathermap"]
+  },
+  "readApis": [
+    {
+      "id": "current_weather",
+      "description": "Current weather data for the selected location",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string" },
+          "country": { "type": "string" },
+          "temperature": {
+            "type": "object",
+            "properties": {
+              "current": { "type": "number" },
+              "feels_like": { "type": "number" },
+              "min": { "type": "number" },
+              "max": { "type": "number" },
+              "unit": { "type": "string" }
+            }
+          },
+          "condition": {
+            "type": "object",
+            "properties": {
+              "main": { "type": "string" },
+              "description": { "type": "string" },
+              "icon": { "type": "string" }
+            }
+          },
+          "atmosphere": {
+            "type": "object",
+            "properties": {
+              "humidity": { "type": "string" },
+              "pressure": { "type": "string" }
+            }
+          },
+          "wind": {
+            "type": "object",
+            "properties": {
+              "speed": { "type": "string" },
+              "direction": { "type": "number" }
+            }
+          },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "events": ["weather_updated", "location_changed"]
+    },
+    {
+      "id": "forecast",
+      "description": "Weather forecast for the next 5 days",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string" },
+          "days_count": { "type": "integer" },
+          "daily_summaries": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": { "type": "string" },
+                "day_name": { "type": "string" },
+                "temperature": { "type": "object" },
+                "condition": { "type": "string" },
+                "description": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "events": ["forecast_updated"]
+    },
+    {
+      "id": "air_quality",
+      "description": "Current air quality data",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "air_quality_index": { "type": "integer" },
+          "level": { "type": "string" },
+          "description": { "type": "string" },
+          "components": { "type": "object" }
+        }
+      },
+      "events": ["air_quality_updated"]
+    },
+    {
+      "id": "settings",
+      "description": "Weather app settings",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "default_location": { "type": "string" },
+          "units": { "type": "string", "enum": ["metric", "imperial"] },
+          "auto_refresh": { "type": "boolean" },
+          "refresh_interval": { "type": "integer" }
+        }
+      },
+      "events": ["settings_changed"]
+    }
+  ],
+  "actionApis": [
+    {
+      "id": "get_weather",
+      "description": "Get current weather for a location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "required": true },
+          "units": { "type": "string", "enum": ["metric", "imperial"], "default": "metric" }
+        }
+      },
+      "returns": { "$ref": "#/schemas/WeatherData" },
+      "sideEffects": ["current_weather"]
+    },
+    {
+      "id": "get_forecast",
+      "description": "Get weather forecast for a location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "required": true },
+          "days": { "type": "integer", "minimum": 1, "maximum": 5, "default": 5 },
+          "units": { "type": "string", "enum": ["metric", "imperial"], "default": "metric" }
+        }
+      },
+      "returns": { "$ref": "#/schemas/ForecastData" },
+      "sideEffects": ["forecast"]
+    },
+    {
+      "id": "get_weather_by_coords",
+      "description": "Get weather using geographic coordinates",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "latitude": { "type": "number", "required": true },
+          "longitude": { "type": "number", "required": true },
+          "units": { "type": "string", "enum": ["metric", "imperial"], "default": "metric" }
+        }
+      },
+      "returns": { "$ref": "#/schemas/WeatherData" },
+      "sideEffects": ["current_weather"]
+    },
+    {
+      "id": "get_uv_index",
+      "description": "Get UV index for a location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "required": true }
+        }
+      },
+      "returns": { "$ref": "#/schemas/UVData" },
+      "sideEffects": []
+    },
+    {
+      "id": "get_air_quality",
+      "description": "Get air quality data for a location",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "required": true }
+        }
+      },
+      "returns": { "$ref": "#/schemas/AirQualityData" },
+      "sideEffects": ["air_quality"]
+    },
+    {
+      "id": "set_default_location",
+      "description": "Set the default location for weather queries",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string", "required": true }
+        }
+      },
+      "sideEffects": ["settings", "current_weather", "forecast"]
+    },
+    {
+      "id": "update_settings",
+      "description": "Update weather app settings",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "units": { "type": "string", "enum": ["metric", "imperial"] },
+          "auto_refresh": { "type": "boolean" },
+          "refresh_interval": { "type": "integer", "minimum": 60 }
+        }
+      },
+      "sideEffects": ["settings"]
+    },
+    {
+      "id": "refresh",
+      "description": "Refresh weather data for current location",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "sideEffects": ["current_weather", "forecast", "air_quality"]
+    }
+  ],
+  "schemas": {
+    "WeatherData": {
+      "type": "object",
+      "properties": {
+        "location": { "type": "string" },
+        "country": { "type": "string" },
+        "coordinates": { "type": "object" },
+        "temperature": { "type": "object" },
+        "condition": { "type": "object" },
+        "atmosphere": { "type": "object" },
+        "wind": { "type": "object" },
+        "visibility": { "type": "string" },
+        "cloudiness": { "type": "string" },
+        "sunrise": { "type": "string" },
+        "sunset": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "ForecastData": {
+      "type": "object",
+      "properties": {
+        "location": { "type": "string" },
+        "country": { "type": "string" },
+        "days_count": { "type": "integer" },
+        "daily_summaries": { "type": "array" },
+        "units": { "type": "object" },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "UVData": {
+      "type": "object",
+      "properties": {
+        "location": { "type": "string" },
+        "uv_index": { "type": "number" },
+        "risk_level": { "type": "string" },
+        "recommendation": { "type": "string" },
+        "timestamp": { "type": "string" }
+      }
+    },
+    "AirQualityData": {
+      "type": "object",
+      "properties": {
+        "location": { "type": "string" },
+        "air_quality_index": { "type": "integer" },
+        "level": { "type": "string" },
+        "description": { "type": "string" },
+        "components": { "type": "object" },
+        "timestamp": { "type": "string" }
+      }
+    }
+  },
+  "specialComponents": [],
+  "permissions": [
+    "network.external",
+    "location.read",
+    "notifications.send",
+    "agent.communicate"
+  ]
+}

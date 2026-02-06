@@ -1,0 +1,1815 @@
+r<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOS: Virtual Operating System - Multi-Agent Architecture</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #334155;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, rgba(37, 99, 235, 0.1) 0%, transparent 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: var(--gradient-3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .header .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .header .meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .header .meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Navigation */
+        .nav {
+            position: sticky;
+            top: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav a:hover {
+            color: var(--text-primary);
+            background: var(--bg-card);
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Section Styling */
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section-number {
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--gradient-1);
+            border-radius: 0.75rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(37, 99, 235, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            font-size: 1.25rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        /* Architecture Diagram */
+        .architecture-diagram {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(124, 58, 237, 0.05) 100%);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+        }
+
+        .diagram-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            min-width: 900px;
+        }
+
+        .diagram-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .diagram-box {
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            min-width: 150px;
+            position: relative;
+        }
+
+        .diagram-box.user {
+            background: var(--gradient-2);
+            color: white;
+        }
+
+        .diagram-box.gateway {
+            background: var(--gradient-3);
+            color: var(--bg-dark);
+        }
+
+        .diagram-box.primary {
+            background: var(--gradient-1);
+            color: white;
+            min-width: 200px;
+        }
+
+        .diagram-box.agent {
+            background: var(--bg-card);
+            border: 2px solid var(--accent);
+            font-size: 0.875rem;
+        }
+
+        .diagram-box.database {
+            background: var(--gradient-4);
+            color: var(--bg-dark);
+        }
+
+        .diagram-box.memory {
+            background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+            color: white;
+        }
+
+        .diagram-arrow {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .diagram-arrow.vertical {
+            transform: rotate(90deg);
+        }
+
+        .diagram-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 0.25rem;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.5rem 0;
+        }
+
+        .flow-number {
+            min-width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary);
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .flow-content {
+            flex: 1;
+        }
+
+        .flow-state {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .flow-state.idle { background: var(--success); color: var(--bg-dark); }
+        .flow-state.thinking { background: var(--warning); color: var(--bg-dark); }
+        .flow-state.executing { background: var(--danger); color: white; }
+
+        .flow-annotation {
+            color: var(--text-muted);
+            font-style: italic;
+            margin-left: 1rem;
+        }
+
+        /* Code Reference */
+        .code-ref {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(6, 182, 212, 0.1);
+            padding: 0.125rem 0.5rem;
+            border-radius: 0.25rem;
+            display: inline-block;
+            margin: 0.25rem 0;
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(37, 99, 235, 0.1);
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        td {
+            color: var(--text-secondary);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 0.125rem;
+        }
+
+        .tag-blue { background: rgba(37, 99, 235, 0.2); color: #60a5fa; }
+        .tag-purple { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+        .tag-green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tag-yellow { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .tag-red { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .tag-cyan { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+
+        /* Memory Schema Visual */
+        .schema-visual {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+        }
+
+        .schema-group {
+            flex: 1;
+            min-width: 200px;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 0.5rem;
+            border-left: 3px solid var(--primary);
+        }
+
+        .schema-group-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .schema-field {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem 0;
+            font-size: 0.8rem;
+        }
+
+        .schema-field-name {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+        }
+
+        .schema-field-type {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+        }
+
+        /* Module Visualization */
+        .module-flow {
+            display: flex;
+            align-items: stretch;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+            overflow-x: auto;
+        }
+
+        .module-box {
+            flex: 1;
+            min-width: 180px;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .module-box.retriever {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.3) 0%, rgba(124, 58, 237, 0.3) 100%);
+            border: 1px solid #8b5cf6;
+        }
+
+        .module-box.creator {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(6, 182, 212, 0.3) 100%);
+            border: 1px solid #10b981;
+        }
+
+        .module-box.llm {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(239, 68, 68, 0.3) 100%);
+            border: 1px solid #f59e0b;
+        }
+
+        .module-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .module-description {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .module-connector {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Decision Tree */
+        .decision-tree {
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.75rem;
+        }
+
+        .decision-node {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-left: 2px solid var(--border);
+            padding-left: 1.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .decision-node:last-child {
+            border-left-color: transparent;
+        }
+
+        .decision-icon {
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+            margin-left: -2rem;
+        }
+
+        .decision-icon.search { background: var(--primary); }
+        .decision-icon.give { background: var(--success); }
+        .decision-icon.ignore { background: var(--text-muted); }
+        .decision-icon.create { background: var(--secondary); }
+        .decision-icon.wait { background: var(--warning); }
+
+        /* Highlight Box */
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin: 1rem 0;
+        }
+
+        .highlight-box .title {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .header .meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            .nav {
+                display: none;
+            }
+
+            .card, .architecture-diagram {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>VOS Architecture</h1>
+        <p class="subtitle">Virtual Operating System: Multi-Agent AI Orchestration with Proactive Memory</p>
+        <div class="meta">
+            <span>Version 1.0</span>
+            <span>November 2024</span>
+            <span>Technical Architecture Document</span>
+        </div>
+    </header>
+
+    <nav class="nav">
+        <div class="nav-inner">
+            <a href="#overview">Overview</a>
+            <a href="#architecture">System Architecture</a>
+            <a href="#agent-system">Agent System</a>
+            <a href="#processing-cycle">Processing Cycle</a>
+            <a href="#memory-system">Memory System</a>
+            <a href="#proactive-modules">Proactive Modules</a>
+            <a href="#data-flow">Data Flow</a>
+            <a href="#implementation">Implementation Details</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Section 1: Overview -->
+        <section id="overview" class="section">
+            <div class="section-header">
+                <div class="section-number">1</div>
+                <h2 class="section-title">System Overview</h2>
+            </div>
+
+            <div class="card">
+                <p style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    VOS (Virtual Operating System) is a sophisticated multi-agent AI orchestration system designed to create a proactive AI companion.
+                    The system employs a hierarchical agent architecture with autonomous memory management, enabling persistent learning and contextual awareness across conversations.
+                </p>
+
+                <div class="grid-3">
+                    <div class="highlight-box">
+                        <div class="title">Multi-Agent Orchestration</div>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Primary agent delegates to specialized sub-agents via RabbitMQ message queues
+                        </p>
+                    </div>
+                    <div class="highlight-box">
+                        <div class="title">Proactive Memory</div>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Autonomous memory creation and retrieval modules act as the agent's "subconscious"
+                        </p>
+                    </div>
+                    <div class="highlight-box">
+                        <div class="title">Event-Driven</div>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Notification-based communication enables async processing and agent coordination
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: High-Level Architecture -->
+        <section id="architecture" class="section">
+            <div class="section-header">
+                <div class="section-number">2</div>
+                <h2 class="section-title">High-Level Architecture</h2>
+            </div>
+
+            <div class="architecture-diagram">
+                <div class="diagram-container">
+                    <!-- Top Row: User Interface -->
+                    <div class="diagram-row">
+                        <div class="diagram-box user">
+                            User
+                            <div class="diagram-label">Flutter App / API</div>
+                        </div>
+                        <div class="diagram-arrow">→</div>
+                        <div class="diagram-box gateway">
+                            API Gateway
+                            <div class="diagram-label">FastAPI REST</div>
+                        </div>
+                        <div class="diagram-arrow">→</div>
+                        <div class="diagram-box primary">
+                            Primary Agent
+                            <div class="diagram-label">Orchestrator</div>
+                        </div>
+                    </div>
+
+                    <!-- Middle Row: Message Broker -->
+                    <div class="diagram-row">
+                        <div style="width: 150px;"></div>
+                        <div class="diagram-arrow vertical">↓</div>
+                        <div style="flex: 1; text-align: center;">
+                            <div class="diagram-box database" style="display: inline-block;">
+                                RabbitMQ
+                                <div class="diagram-label">Message Broker</div>
+                            </div>
+                        </div>
+                        <div class="diagram-arrow vertical">↓</div>
+                        <div style="width: 150px;"></div>
+                    </div>
+
+                    <!-- Bottom Row: Specialized Agents -->
+                    <div class="diagram-row" style="flex-wrap: wrap; gap: 0.75rem;">
+                        <div class="diagram-box agent">
+                            Weather Agent
+                        </div>
+                        <div class="diagram-box agent">
+                            Notes Agent
+                        </div>
+                        <div class="diagram-box agent">
+                            Calendar Agent
+                        </div>
+                        <div class="diagram-box agent">
+                            Search Agent
+                        </div>
+                        <div class="diagram-box agent">
+                            Browser Agent
+                        </div>
+                        <div class="diagram-box agent">
+                            Calculator Agent
+                        </div>
+                    </div>
+
+                    <!-- Data Layer -->
+                    <div class="diagram-row" style="margin-top: 1rem;">
+                        <div class="diagram-box database">
+                            PostgreSQL
+                            <div class="diagram-label">Message History & State</div>
+                        </div>
+                        <div style="width: 2rem;"></div>
+                        <div class="diagram-box memory">
+                            Weaviate
+                            <div class="diagram-label">Vector Memory Store</div>
+                        </div>
+                        <div style="width: 2rem;"></div>
+                        <div class="diagram-box gateway">
+                            Gemini API
+                            <div class="diagram-label">LLM Provider</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-1);">📡</div>
+                        <div class="card-title">Communication Layer</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Component</th>
+                                <th>Technology</th>
+                                <th>Purpose</th>
+                            </tr>
+                            <tr>
+                                <td>API Gateway</td>
+                                <td>FastAPI</td>
+                                <td>REST endpoints, WebSocket</td>
+                            </tr>
+                            <tr>
+                                <td>Message Broker</td>
+                                <td>RabbitMQ</td>
+                                <td>Inter-agent communication</td>
+                            </tr>
+                            <tr>
+                                <td>Frontend</td>
+                                <td>Flutter</td>
+                                <td>Cross-platform UI</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="code-ref">services/api_gateway/ • docker-compose.yml</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-4);">💾</div>
+                        <div class="card-title">Data Layer</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Store</th>
+                                <th>Technology</th>
+                                <th>Data Type</th>
+                            </tr>
+                            <tr>
+                                <td>Relational</td>
+                                <td>PostgreSQL</td>
+                                <td>Messages, agent state</td>
+                            </tr>
+                            <tr>
+                                <td>Vector</td>
+                                <td>Weaviate</td>
+                                <td>Semantic memories</td>
+                            </tr>
+                            <tr>
+                                <td>Embeddings</td>
+                                <td>Gemini text-embedding-004</td>
+                                <td>768-dim vectors</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="code-ref">services/tools/memory/weaviate_client.py</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Agent System -->
+        <section id="agent-system" class="section">
+            <div class="section-header">
+                <div class="section-number">3</div>
+                <h2 class="section-title">Agent System Architecture</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-1);">🤖</div>
+                    <div class="card-title">Core Agent Classes</div>
+                </div>
+
+                <div class="schema-visual">
+                    <div class="schema-group" style="border-left-color: var(--primary);">
+                        <div class="schema-group-title">VOSAgent (Base Class)</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">config</span>
+                            <span class="schema-field-type">AgentConfig</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">tools</span>
+                            <span class="schema-field-type">Dict[str, BaseTool]</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">context_builder</span>
+                            <span class="schema-field-type">ContextBuilder</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">memory_creator</span>
+                            <span class="schema-field-type">MemoryCreatorModule</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">memory_retriever</span>
+                            <span class="schema-field-type">MemoryRetrieverModule</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">genai_client</span>
+                            <span class="schema-field-type">genai.Client</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: var(--secondary);">
+                        <div class="schema-group-title">VOSAgentImplementation</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">TOOLS</span>
+                            <span class="schema-field-type">List[BaseTool]</span>
+                        </div>
+                        <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                            Abstract class for specific agents. Inheritors define TOOLS list.
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: var(--accent);">
+                        <div class="schema-group-title">Key Methods</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">start()</span>
+                            <span class="schema-field-type">Main loop</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">_process_notifications_cycle()</span>
+                            <span class="schema-field-type">Core cycle</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">_call_llm()</span>
+                            <span class="schema-field-type">Gemini API</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">_execute_tool()</span>
+                            <span class="schema-field-type">Tool dispatch</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="code-ref">sdk/vos_sdk/core/agent.py:126-1346</div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-3);">⚙️</div>
+                        <div class="card-title">Agent Configuration</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Parameter</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td><code>agent_name</code></td>
+                                <td>Unique identifier (e.g., "primary_agent")</td>
+                            </tr>
+                            <tr>
+                                <td><code>queue_name</code></td>
+                                <td>RabbitMQ queue for notifications</td>
+                            </tr>
+                            <tr>
+                                <td><code>gemini_api_key</code></td>
+                                <td>LLM API authentication</td>
+                            </tr>
+                            <tr>
+                                <td><code>max_conversation_messages</code></td>
+                                <td>Context window limit</td>
+                            </tr>
+                            <tr>
+                                <td><code>agent_check_interval_seconds</code></td>
+                                <td>Polling frequency</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="code-ref">sdk/vos_sdk/core/config.py</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-2);">📋</div>
+                        <div class="card-title">Notification Types</div>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <span class="tag tag-blue">user_message</span>
+                        <span class="tag tag-purple">agent_message</span>
+                        <span class="tag tag-green">tool_result</span>
+                        <span class="tag tag-yellow">alarm_triggered</span>
+                        <span class="tag tag-red">timer_expired</span>
+                        <span class="tag tag-cyan">sleep_timer_expired</span>
+                        <span class="tag tag-blue">scheduled_event</span>
+                        <span class="tag tag-purple">vos_event_subscription</span>
+                        <span class="tag tag-green">reload_prompt</span>
+                        <span class="tag tag-yellow">error_message</span>
+                    </div>
+                    <div class="code-ref" style="margin-top: 1rem;">sdk/vos_sdk/core/context.py:25-34</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Processing Cycle -->
+        <section id="processing-cycle" class="section">
+            <div class="section-header">
+                <div class="section-number">4</div>
+                <h2 class="section-title">Agent Processing Cycle</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-1);">🔄</div>
+                    <div class="card-title">Complete Processing Flow</div>
+                </div>
+
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="flow-number">1</div>
+                        <div class="flow-content">
+                            <span class="flow-state idle">IDLE</span>
+                            <strong>Check for notifications</strong>
+                            <span class="flow-annotation">_should_check_notifications() → _get_pending_notifications()</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">2</div>
+                        <div class="flow-content">
+                            <span class="flow-state thinking">THINKING</span>
+                            <strong>Set processing state</strong>
+                            <span class="flow-annotation">db.set_processing_state(ProcessingState.THINKING)</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">3</div>
+                        <div class="flow-content">
+                            <strong>Retrieve message history</strong>
+                            <span class="flow-annotation">db.get_message_history(limit=retrieval_limit)</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">4</div>
+                        <div class="flow-content">
+                            <strong style="color: #a78bfa;">Run Memory Retriever</strong> <span class="tag tag-purple">PROACTIVE</span>
+                            <span class="flow-annotation">memory_retriever.run(messages) → retrieved_memories</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">5</div>
+                        <div class="flow-content">
+                            <strong>Build conversation context</strong>
+                            <span class="flow-annotation">context_builder.build_conversation_messages(existing + notifications + memories)</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">6</div>
+                        <div class="flow-content">
+                            <strong>Call LLM</strong>
+                            <span class="flow-annotation">_call_llm(messages) → gemini-3-pro-preview (JSON mode)</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">7</div>
+                        <div class="flow-content">
+                            <strong>Parse response</strong>
+                            <span class="flow-annotation">context_builder.parse_llm_response() → {thought, tool_calls, action_status}</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">8</div>
+                        <div class="flow-content">
+                            <span class="flow-state executing">EXECUTING</span>
+                            <strong>Execute tools</strong>
+                            <span class="flow-annotation">for tool_call in tool_calls: _execute_tool(name, args)</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">9</div>
+                        <div class="flow-content">
+                            <strong style="color: #34d399;">Run Memory Creator</strong> <span class="tag tag-green">PROACTIVE</span>
+                            <span class="flow-annotation">memory_creator.run(messages) → creates memories in Weaviate</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number">10</div>
+                        <div class="flow-content">
+                            <span class="flow-state idle">IDLE</span>
+                            <strong>Acknowledge notifications</strong>
+                            <span class="flow-annotation">_handle_notification_results() → basic_ack/basic_nack</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="code-ref">sdk/vos_sdk/core/agent.py:702-1041 (_process_notifications_cycle)</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-2);">📤</div>
+                    <div class="card-title">LLM Response Schema</div>
+                </div>
+                <p style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    Agents must respond with a JSON object containing thought process and tool calls. The <code>tool_calls</code> array cannot be empty.
+                </p>
+                <pre style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.8rem;">
+{
+  "thought": "Analysis of the situation and reasoning...",
+  "action_status": "Searching for weather data...",  // Optional, shown to user
+  "tool_calls": [
+    {
+      "tool_name": "get_weather",
+      "arguments": {
+        "location": "New York",
+        "units": "metric"
+      }
+    }
+  ]
+}</pre>
+                <div class="code-ref">sdk/vos_sdk/core/context.py:164-251 (parse_llm_response)</div>
+            </div>
+        </section>
+
+        <!-- Section 5: Memory System -->
+        <section id="memory-system" class="section">
+            <div class="section-header">
+                <div class="section-number">5</div>
+                <h2 class="section-title">Memory System Architecture</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);">🧠</div>
+                    <div class="card-title">Weaviate Memory Schema</div>
+                </div>
+                <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                    The Memory collection stores all agent memories with 768-dimensional vectors for semantic search.
+                    Collection name: <code>Memory</code>
+                </p>
+
+                <div class="schema-visual">
+                    <div class="schema-group" style="border-left-color: #a855f7;">
+                        <div class="schema-group-title">Core Fields</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">content</span>
+                            <span class="schema-field-type">TEXT</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">memory_type</span>
+                            <span class="schema-field-type">TEXT (enum)</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">scope</span>
+                            <span class="schema-field-type">TEXT (enum)</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: #6366f1;">
+                        <div class="schema-group-title">Scope & Access</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">agent_id</span>
+                            <span class="schema-field-type">TEXT</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">session_id</span>
+                            <span class="schema-field-type">TEXT</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: #22d3ee;">
+                        <div class="schema-group-title">Context & Relations</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">related_event_types</span>
+                            <span class="schema-field-type">TEXT[]</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">related_tools</span>
+                            <span class="schema-field-type">TEXT[]</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">related_memory_ids</span>
+                            <span class="schema-field-type">TEXT[]</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">tags</span>
+                            <span class="schema-field-type">TEXT[]</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: #f59e0b;">
+                        <div class="schema-group-title">Metadata</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">importance</span>
+                            <span class="schema-field-type">NUMBER (0.0-1.0)</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">confidence</span>
+                            <span class="schema-field-type">NUMBER (0.0-1.0)</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">source</span>
+                            <span class="schema-field-type">TEXT (enum)</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: #10b981;">
+                        <div class="schema-group-title">Temporal & Usage</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">created_at</span>
+                            <span class="schema-field-type">DATE</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">updated_at</span>
+                            <span class="schema-field-type">DATE</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">expires_at</span>
+                            <span class="schema-field-type">DATE</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">access_count</span>
+                            <span class="schema-field-type">INT</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">last_accessed_at</span>
+                            <span class="schema-field-type">DATE</span>
+                        </div>
+                    </div>
+
+                    <div class="schema-group" style="border-left-color: #ef4444;">
+                        <div class="schema-group-title">Learning Metrics</div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">success_count</span>
+                            <span class="schema-field-type">INT</span>
+                        </div>
+                        <div class="schema-field">
+                            <span class="schema-field-name">failure_count</span>
+                            <span class="schema-field-type">INT</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="code-ref">services/tools/memory/weaviate_client.py:116-270 (_ensure_schema)</div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-1);">📂</div>
+                        <div class="card-title">Memory Types</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Type</th>
+                                <th>Description</th>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-blue">user_preference</span></td>
+                                <td>How the user wants things done</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-purple">user_fact</span></td>
+                                <td>Information about who the user is</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-green">conversation_context</span></td>
+                                <td>Ongoing topics, projects, goals</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-yellow">agent_procedure</span></td>
+                                <td>What worked/failed for the agent</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-cyan">knowledge</span></td>
+                                <td>General learned knowledge</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-red">error_handling</span></td>
+                                <td>How to handle specific errors</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-blue">event_pattern</span></td>
+                                <td>Recognized event patterns</td>
+                            </tr>
+                            <tr>
+                                <td><span class="tag tag-purple">proactive_action</span></td>
+                                <td>When to act without being asked</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="code-ref">services/tools/memory/weaviate_client.py:21-30</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-4);">🔧</div>
+                        <div class="card-title">Memory Tools (Agent API)</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Tool</th>
+                                <th>Purpose</th>
+                            </tr>
+                            <tr>
+                                <td><code>create_memory</code></td>
+                                <td>Store new memory with auto-embedding</td>
+                            </tr>
+                            <tr>
+                                <td><code>search_memory</code></td>
+                                <td>Semantic search + metadata filters</td>
+                            </tr>
+                            <tr>
+                                <td><code>get_memory</code></td>
+                                <td>Retrieve by UUID</td>
+                            </tr>
+                            <tr>
+                                <td><code>update_memory</code></td>
+                                <td>Modify content/metadata</td>
+                            </tr>
+                            <tr>
+                                <td><code>delete_memory</code></td>
+                                <td>Remove permanently</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="code-ref">services/tools/memory/memory_tools.py:23-551</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-3);">🔢</div>
+                    <div class="card-title">Embedding Service</div>
+                </div>
+                <div class="grid-2">
+                    <div>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                            Uses Google Gemini <code>text-embedding-004</code> model with task-specific prefixes for optimal retrieval.
+                        </p>
+                        <div class="highlight-box">
+                            <div class="title">Vector Specifications</div>
+                            <ul style="list-style: none; font-size: 0.875rem; color: var(--text-secondary);">
+                                <li>• Dimensions: <strong>768</strong></li>
+                                <li>• Model: <code>models/text-embedding-004</code></li>
+                                <li>• Storage prefix: <code>search_document:</code></li>
+                                <li>• Query prefix: <code>search_query:</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="schema-visual" style="padding: 1rem;">
+                        <div class="schema-group" style="border-left-color: var(--accent); width: 100%;">
+                            <div class="schema-group-title">EmbeddingService Methods</div>
+                            <div class="schema-field">
+                                <span class="schema-field-name">embed_memory(text)</span>
+                                <span class="schema-field-type">→ List[float]</span>
+                            </div>
+                            <div class="schema-field">
+                                <span class="schema-field-name">embed_query(query)</span>
+                                <span class="schema-field-type">→ List[float]</span>
+                            </div>
+                            <div class="schema-field">
+                                <span class="schema-field-name">embed_memories_batch(texts)</span>
+                                <span class="schema-field-type">→ List[List[float]]</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="code-ref">services/tools/memory/embedding_service.py</div>
+            </div>
+        </section>
+
+        <!-- Section 6: Proactive Memory Modules -->
+        <section id="proactive-modules" class="section">
+            <div class="section-header">
+                <div class="section-number">6</div>
+                <h2 class="section-title">Proactive Memory Modules ("The Subconscious")</h2>
+            </div>
+
+            <div class="card">
+                <p style="font-size: 1.05rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                    Two autonomous modules run alongside the main agent loop, handling memory creation and retrieval without explicit tool calls.
+                    They use a lightweight LLM (<code>gemini-2.5-flash-lite</code>) for decision-making.
+                </p>
+
+                <div class="module-flow">
+                    <div class="module-box retriever">
+                        <div class="module-title">Memory Retriever</div>
+                        <div class="module-description">Runs BEFORE LLM call</div>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="tag tag-purple">Pre-Processing</span>
+                        </div>
+                    </div>
+                    <div class="module-connector">→</div>
+                    <div class="module-box llm">
+                        <div class="module-title">Main LLM Call</div>
+                        <div class="module-description">gemini-3-pro-preview</div>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="tag tag-yellow">Core Processing</span>
+                        </div>
+                    </div>
+                    <div class="module-connector">→</div>
+                    <div class="module-box creator">
+                        <div class="module-title">Memory Creator</div>
+                        <div class="module-description">Runs AFTER LLM call</div>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="tag tag-green">Post-Processing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- Memory Retriever -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);">🔍</div>
+                        <div class="card-title">Memory Retriever Module</div>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Searches for relevant memories based on conversation context. Uses iterative refinement with up to 3 search iterations.
+                    </p>
+
+                    <div class="decision-tree">
+                        <div class="decision-node">
+                            <div class="decision-icon search">🔎</div>
+                            <div>
+                                <strong>GET_MEMORIES</strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                    Generate 1-3 focused search queries → semantic search in Weaviate → add results to context
+                                </p>
+                            </div>
+                        </div>
+                        <div class="decision-node">
+                            <div class="decision-icon give">✓</div>
+                            <div>
+                                <strong>GIVE_MEMORIES</strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                    Select relevant memory IDs from search results → inject into agent context as user message
+                                </p>
+                            </div>
+                        </div>
+                        <div class="decision-node">
+                            <div class="decision-icon ignore">−</div>
+                            <div>
+                                <strong>IGNORE</strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                    No memories needed for this conversation
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box" style="margin-top: 1rem;">
+                        <div class="title">Configuration (Environment)</div>
+                        <code style="font-size: 0.75rem; display: block; margin-top: 0.5rem;">
+                            MEMORY_RETRIEVER_RUN_EVERY_N_TURNS=1<br>
+                            MEMORY_RETRIEVER_CONTEXT_MESSAGES=10<br>
+                            MEMORY_RETRIEVER_MAX_ITERATIONS=3<br>
+                            {AGENT}_MEMORY_RETRIEVER_ENABLED=true
+                        </code>
+                    </div>
+                    <div class="code-ref">services/tools/memory/memory_retriever.py</div>
+                </div>
+
+                <!-- Memory Creator -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);">💾</div>
+                        <div class="card-title">Memory Creator Module</div>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Analyzes conversations and autonomously creates memories for important information. Stores WAIT state in agent metadata.
+                    </p>
+
+                    <div class="decision-tree">
+                        <div class="decision-node">
+                            <div class="decision-icon create">+</div>
+                            <div>
+                                <strong>CREATE_NOW</strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                    Complete, valuable information detected → create memory objects in Weaviate
+                                </p>
+                            </div>
+                        </div>
+                        <div class="decision-node">
+                            <div class="decision-icon wait">⏳</div>
+                            <div>
+                                <strong>WAIT</strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                    User started sharing but hasn't finished → store topic in agent metadata for next turn
+                                </p>
+                            </div>
+                        </div>
+                        <div class="decision-node">
+                            <div class="decision-icon ignore">−</div>
+                            <div>
+                                <strong>IGNORE</strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);">
+                                    Nothing significant to remember (trivial exchanges, already captured)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="highlight-box" style="margin-top: 1rem;">
+                        <div class="title">What Gets Memorized</div>
+                        <ul style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem; padding-left: 1.25rem;">
+                            <li>Explicit user preferences & corrections</li>
+                            <li>Personal facts (name, job, interests)</li>
+                            <li>Important conversation context</li>
+                            <li>Learned procedures (success/failure)</li>
+                            <li>Behavioral patterns</li>
+                        </ul>
+                    </div>
+                    <div class="code-ref">services/tools/memory/memory_creator.py</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-1);">📊</div>
+                    <div class="card-title">Dual Memory Scope Design</div>
+                </div>
+                <div class="grid-2">
+                    <div class="highlight-box">
+                        <div class="title" style="color: #60a5fa;">Individual Scope</div>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Private to the creating agent. Used for agent-specific procedures, error handling, and learned behaviors that may not apply to other agents.
+                        </p>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="tag tag-blue">agent_procedure</span>
+                            <span class="tag tag-blue">error_handling</span>
+                        </div>
+                    </div>
+                    <div class="highlight-box">
+                        <div class="title" style="color: #34d399;">Shared Scope</div>
+                        <p style="font-size: 0.875rem; color: var(--text-secondary);">
+                            Accessible to all agents. Used for user preferences, facts, and knowledge that should be available system-wide.
+                        </p>
+                        <div style="margin-top: 0.5rem;">
+                            <span class="tag tag-green">user_preference</span>
+                            <span class="tag tag-green">user_fact</span>
+                            <span class="tag tag-green">knowledge</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="code-ref">services/tools/memory/weaviate_client.py:33-36 (MemoryScope enum)</div>
+            </div>
+        </section>
+
+        <!-- Section 7: Data Flow -->
+        <section id="data-flow" class="section">
+            <div class="section-header">
+                <div class="section-number">7</div>
+                <h2 class="section-title">Complete Data Flow</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-3);">📨</div>
+                    <div class="card-title">Message Flow: User → Response</div>
+                </div>
+
+                <div class="flow-diagram" style="font-size: 0.75rem;">
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--gradient-2);">U</div>
+                        <div class="flow-content">
+                            <strong>User sends message</strong> via Flutter app
+                            <span class="flow-annotation">POST /api/v1/chat → API Gateway</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--gradient-3);">G</div>
+                        <div class="flow-content">
+                            <strong>API Gateway</strong> creates notification, publishes to primary_agent queue
+                            <span class="flow-annotation">{notification_type: "user_message", payload: {text, session_id}}</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--gradient-1);">P</div>
+                        <div class="flow-content">
+                            <strong>Primary Agent</strong> consumes notification, runs processing cycle
+                            <span class="flow-annotation">Memory Retriever → LLM → Tool Execution → Memory Creator</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--accent);">D</div>
+                        <div class="flow-content">
+                            <strong>Delegation</strong> (if needed): Primary Agent sends to sub-agent queue
+                            <span class="flow-annotation">delegate_to_agent tool → RabbitMQ → weather_agent queue</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--success);">S</div>
+                        <div class="flow-content">
+                            <strong>Sub-agent</strong> processes, sends result back via agent_message notification
+                            <span class="flow-annotation">→ primary_agent queue</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--gradient-1);">P</div>
+                        <div class="flow-content">
+                            <strong>Primary Agent</strong> receives result, formulates user response
+                            <span class="flow-annotation">respond_to_user tool → API Gateway</span>
+                        </div>
+                    </div>
+                    <div class="flow-step">
+                        <div class="flow-number" style="background: var(--gradient-2);">U</div>
+                        <div class="flow-content">
+                            <strong>User receives response</strong> via WebSocket or polling
+                            <span class="flow-annotation">SSE stream or GET /api/v1/chat/{session_id}/messages</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);">🔄</div>
+                    <div class="card-title">Memory Flow: Creation → Retrieval</div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Creation Path</h4>
+                        <div class="flow-diagram" style="font-size: 0.7rem;">
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #10b981;">1</div>
+                                <div class="flow-content">Memory Creator analyzes conversation</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #10b981;">2</div>
+                                <div class="flow-content">LLM decides: CREATE_NOW / WAIT / IGNORE</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #10b981;">3</div>
+                                <div class="flow-content">EmbeddingService.embed_memory(content)</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #10b981;">4</div>
+                                <div class="flow-content">WeaviateClient.create_memory(content, vector, ...)</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--accent); margin-bottom: 0.75rem;">Retrieval Path</h4>
+                        <div class="flow-diagram" style="font-size: 0.7rem;">
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #8b5cf6;">1</div>
+                                <div class="flow-content">Memory Retriever analyzes context</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #8b5cf6;">2</div>
+                                <div class="flow-content">LLM generates search queries</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #8b5cf6;">3</div>
+                                <div class="flow-content">EmbeddingService.embed_query(query)</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #8b5cf6;">4</div>
+                                <div class="flow-content">WeaviateClient.search_memories(vector, filters)</div>
+                            </div>
+                            <div class="flow-step">
+                                <div class="flow-number" style="background: #8b5cf6;">5</div>
+                                <div class="flow-content">Inject as {type: "proactive_memories"} message</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 8: Implementation Details -->
+        <section id="implementation" class="section">
+            <div class="section-header">
+                <div class="section-number">8</div>
+                <h2 class="section-title">Implementation Reference</h2>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-1);">📁</div>
+                    <div class="card-title">Project Structure</div>
+                </div>
+                <pre style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.75rem; line-height: 1.8;">
+VOS/
+├── sdk/vos_sdk/
+│   ├── core/
+│   │   ├── <span style="color: #60a5fa;">agent.py</span>          # VOSAgent, VOSAgentImplementation classes
+│   │   ├── <span style="color: #60a5fa;">config.py</span>         # AgentConfig
+│   │   ├── <span style="color: #60a5fa;">context.py</span>        # ContextBuilder, NotificationType, MessageRole
+│   │   └── <span style="color: #60a5fa;">database.py</span>       # DatabaseClient, ProcessingState, AgentStatus
+│   └── tools/
+│       └── <span style="color: #a78bfa;">base.py</span>           # BaseTool class
+│
+├── services/
+│   ├── agents/
+│   │   ├── primary_agent/    # Main orchestrator
+│   │   ├── weather_agent/
+│   │   ├── notes_agent/
+│   │   ├── calendar_agent/
+│   │   ├── search_agent/
+│   │   ├── browser_agent/
+│   │   └── calculator_agent/
+│   │
+│   ├── tools/
+│   │   ├── memory/
+│   │   │   ├── <span style="color: #34d399;">weaviate_client.py</span>    # WeaviateClient, Memory schema
+│   │   │   ├── <span style="color: #34d399;">embedding_service.py</span>  # EmbeddingService (768-dim)
+│   │   │   ├── <span style="color: #34d399;">memory_tools.py</span>       # CRUD tools for agents
+│   │   │   ├── <span style="color: #fbbf24;">memory_creator.py</span>     # Proactive creation module
+│   │   │   └── <span style="color: #fbbf24;">memory_retriever.py</span>   # Proactive retrieval module
+│   │   ├── standard/         # Core tools (delegate, respond, sleep, etc.)
+│   │   ├── weather/
+│   │   ├── notes/
+│   │   ├── calendar/
+│   │   ├── search/
+│   │   └── browser/
+│   │
+│   └── api_gateway/          # FastAPI REST + WebSocket
+│
+├── VOS_frontend/             # Flutter cross-platform app
+│
+└── docker-compose.yml        # Full stack orchestration</pre>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-4);">🔑</div>
+                        <div class="card-title">Key Environment Variables</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Purpose</th>
+                            </tr>
+                            <tr>
+                                <td><code>GEMINI_API_KEY</code></td>
+                                <td>LLM & embedding API</td>
+                            </tr>
+                            <tr>
+                                <td><code>WEAVIATE_URL</code></td>
+                                <td>Vector store endpoint</td>
+                            </tr>
+                            <tr>
+                                <td><code>RABBITMQ_URL</code></td>
+                                <td>Message broker</td>
+                            </tr>
+                            <tr>
+                                <td><code>DATABASE_URL</code></td>
+                                <td>PostgreSQL connection</td>
+                            </tr>
+                            <tr>
+                                <td><code>MEMORY_CREATOR_RUN_EVERY_N_TURNS</code></td>
+                                <td>Creator frequency</td>
+                            </tr>
+                            <tr>
+                                <td><code>MEMORY_RETRIEVER_MAX_ITERATIONS</code></td>
+                                <td>Search refinement limit</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: var(--gradient-2);">🐳</div>
+                        <div class="card-title">Docker Services</div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <tr>
+                                <th>Service</th>
+                                <th>Image/Base</th>
+                            </tr>
+                            <tr>
+                                <td>api_gateway</td>
+                                <td>Python/FastAPI</td>
+                            </tr>
+                            <tr>
+                                <td>primary_agent</td>
+                                <td>Python + VOS SDK</td>
+                            </tr>
+                            <tr>
+                                <td>*_agent</td>
+                                <td>Python + VOS SDK</td>
+                            </tr>
+                            <tr>
+                                <td>rabbitmq</td>
+                                <td>rabbitmq:3-management</td>
+                            </tr>
+                            <tr>
+                                <td>postgres</td>
+                                <td>postgres:15</td>
+                            </tr>
+                            <tr>
+                                <td>weaviate</td>
+                                <td>semitechnologies/weaviate</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon" style="background: var(--gradient-1);">📚</div>
+                    <div class="card-title">Quick Reference: Code Locations</div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <tr>
+                            <th>Component</th>
+                            <th>File Path</th>
+                            <th>Key Lines</th>
+                        </tr>
+                        <tr>
+                            <td>Agent processing cycle</td>
+                            <td><code>sdk/vos_sdk/core/agent.py</code></td>
+                            <td>702-1041</td>
+                        </tr>
+                        <tr>
+                            <td>LLM response parsing</td>
+                            <td><code>sdk/vos_sdk/core/context.py</code></td>
+                            <td>164-251</td>
+                        </tr>
+                        <tr>
+                            <td>Weaviate Memory schema</td>
+                            <td><code>services/tools/memory/weaviate_client.py</code></td>
+                            <td>116-270</td>
+                        </tr>
+                        <tr>
+                            <td>Memory Creator logic</td>
+                            <td><code>services/tools/memory/memory_creator.py</code></td>
+                            <td>58-405</td>
+                        </tr>
+                        <tr>
+                            <td>Memory Retriever logic</td>
+                            <td><code>services/tools/memory/memory_retriever.py</code></td>
+                            <td>21-375</td>
+                        </tr>
+                        <tr>
+                            <td>Embedding generation</td>
+                            <td><code>services/tools/memory/embedding_service.py</code></td>
+                            <td>27-216</td>
+                        </tr>
+                        <tr>
+                            <td>Memory CRUD tools</td>
+                            <td><code>services/tools/memory/memory_tools.py</code></td>
+                            <td>23-551</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>
+            VOS: Virtual Operating System Architecture Documentation<br>
+            Generated November 2024 • <a href="https://github.com">View on GitHub</a>
+        </p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,286 @@
+{
+  "manifestVersion": "1.0.0",
+  "app": {
+    "id": "com.vos.notes",
+    "name": "notes",
+    "displayName": "Notes",
+    "version": "1.0.0",
+    "description": "Create and manage notes with rich text support and cloud storage",
+    "icon": {
+      "type": "material",
+      "name": "description_outlined",
+      "color": "#FF9800"
+    },
+    "category": "productivity",
+    "author": "VOS Team",
+    "license": "proprietary"
+  },
+  "type": "native",
+  "capabilities": {
+    "offline": true,
+    "multiInstance": false,
+    "backgroundProcessing": true,
+    "notifications": true,
+    "voiceControl": true,
+    "agentIntegration": true
+  },
+  "ui": {
+    "type": "native",
+    "entryPoint": "NotesPage",
+    "defaultSize": { "width": 550, "height": 450 },
+    "minSize": { "width": 300, "height": 250 },
+    "supportsFullscreen": true,
+    "accentColor": "#FF9800"
+  },
+  "backend": {
+    "agentId": "notes_agent",
+    "containerImage": "vos_notes_agent:latest",
+    "port": 8006,
+    "healthEndpoint": "/health",
+    "database": {
+      "type": "postgres",
+      "tables": ["notes"],
+      "migrations": "migrations/"
+    },
+    "externalServices": ["gcs"]
+  },
+  "readApis": [
+    {
+      "id": "current_note",
+      "description": "Currently opened note in the editor",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "is_saved": { "type": "boolean" },
+          "is_pinned": { "type": "boolean" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "events": ["note_opened", "note_updated", "note_closed", "note_saved"]
+    },
+    {
+      "id": "notes_list",
+      "description": "List of all notes with metadata",
+      "schema": {
+        "type": "array",
+        "items": { "$ref": "#/schemas/NotePreview" }
+      },
+      "events": ["notes_loaded", "note_created", "note_deleted", "note_updated"]
+    },
+    {
+      "id": "selected_notes",
+      "description": "Currently selected notes for bulk operations",
+      "schema": {
+        "type": "array",
+        "items": { "type": "integer" }
+      },
+      "events": ["selection_changed"]
+    },
+    {
+      "id": "search_results",
+      "description": "Results from note search",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string" },
+          "results": { "type": "array", "items": { "$ref": "#/schemas/NotePreview" } },
+          "total_count": { "type": "integer" }
+        }
+      },
+      "events": ["search_completed"]
+    },
+    {
+      "id": "folders",
+      "description": "List of note folders",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "note_count": { "type": "integer" }
+          }
+        }
+      },
+      "events": ["folders_loaded", "folder_created", "folder_deleted"]
+    }
+  ],
+  "actionApis": [
+    {
+      "id": "create_note",
+      "description": "Create a new note",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "required": true },
+          "content": { "type": "string", "required": true },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "folder": { "type": "string" },
+          "color": { "type": "string" }
+        }
+      },
+      "returns": { "$ref": "#/schemas/Note" },
+      "sideEffects": ["notes_list", "current_note"]
+    },
+    {
+      "id": "open_note",
+      "description": "Open a note in the editor",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer", "required": true }
+        }
+      },
+      "sideEffects": ["current_note"]
+    },
+    {
+      "id": "save_note",
+      "description": "Save current note changes",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer" },
+          "title": { "type": "string" },
+          "content": { "type": "string" }
+        }
+      },
+      "sideEffects": ["current_note", "notes_list"]
+    },
+    {
+      "id": "delete_note",
+      "description": "Delete a note permanently",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer", "required": true }
+        }
+      },
+      "sideEffects": ["notes_list", "current_note"]
+    },
+    {
+      "id": "search_notes",
+      "description": "Search notes by content or title",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "required": true },
+          "folder": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "limit": { "type": "integer", "default": 20 }
+        }
+      },
+      "sideEffects": ["search_results"]
+    },
+    {
+      "id": "semantic_search",
+      "description": "Search notes using semantic similarity (Weaviate)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "required": true },
+          "limit": { "type": "integer", "default": 10 }
+        }
+      },
+      "sideEffects": ["search_results"]
+    },
+    {
+      "id": "pin_note",
+      "description": "Pin or unpin a note",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer", "required": true },
+          "is_pinned": { "type": "boolean", "required": true }
+        }
+      },
+      "sideEffects": ["notes_list", "current_note"]
+    },
+    {
+      "id": "archive_note",
+      "description": "Archive or unarchive a note",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer", "required": true },
+          "is_archived": { "type": "boolean", "required": true }
+        }
+      },
+      "sideEffects": ["notes_list", "current_note"]
+    },
+    {
+      "id": "move_to_folder",
+      "description": "Move a note to a different folder",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer", "required": true },
+          "folder": { "type": "string", "required": true }
+        }
+      },
+      "sideEffects": ["notes_list", "current_note", "folders"]
+    },
+    {
+      "id": "add_tags",
+      "description": "Add tags to a note",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "note_id": { "type": "integer", "required": true },
+          "tags": { "type": "array", "items": { "type": "string" }, "required": true }
+        }
+      },
+      "sideEffects": ["current_note", "notes_list"]
+    },
+    {
+      "id": "close_note",
+      "description": "Close the current note",
+      "parameters": {
+        "type": "object",
+        "properties": {}
+      },
+      "sideEffects": ["current_note"]
+    }
+  ],
+  "schemas": {
+    "Note": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "content_preview": { "type": "string", "maxLength": 200 },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "folder": { "type": "string" },
+        "color": { "type": "string" },
+        "is_pinned": { "type": "boolean" },
+        "is_archived": { "type": "boolean" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "NotePreview": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "content_preview": { "type": "string", "maxLength": 200 },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "folder": { "type": "string" },
+        "is_pinned": { "type": "boolean" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "specialComponents": [],
+  "permissions": [
+    "storage.read",
+    "storage.write",
+    "notifications.send",
+    "agent.communicate"
+  ]
+}

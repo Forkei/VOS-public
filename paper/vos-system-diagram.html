@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOS System Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        .page {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* Main Diagram Container */
+        .diagram {
+            border: 1px solid #333;
+            padding: 30px;
+            background: #fafafa;
+            position: relative;
+        }
+
+        /* Component Boxes */
+        .box {
+            border: 2px solid #333;
+            background: #fff;
+            padding: 10px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            position: absolute;
+        }
+
+        .box.rounded {
+            border-radius: 20px;
+        }
+
+        .box.dashed {
+            border-style: dashed;
+        }
+
+        .box-label {
+            font-size: 9px;
+            font-weight: normal;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        /* Colored accent boxes */
+        .box.primary {
+            background: #e8f4fc;
+            border-color: #2563eb;
+        }
+
+        .box.memory {
+            background: #f3e8ff;
+            border-color: #7c3aed;
+        }
+
+        .box.agent {
+            background: #ecfdf5;
+            border-color: #10b981;
+        }
+
+        .box.data {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+
+        /* Container groups */
+        .group {
+            border: 1px solid #999;
+            position: absolute;
+            background: rgba(255,255,255,0.5);
+        }
+
+        .group-label {
+            position: absolute;
+            top: -10px;
+            left: 12px;
+            background: #fafafa;
+            padding: 0 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #666;
+        }
+
+        /* SVG for arrows */
+        .arrows {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .arrows line, .arrows path {
+            stroke: #333;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .arrows .dashed {
+            stroke-dasharray: 4,3;
+        }
+
+        .arrows text {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-size: 9px;
+            fill: #666;
+        }
+
+        /* Arrow markers */
+        .arrow-label {
+            position: absolute;
+            font-size: 8px;
+            color: #666;
+            background: #fafafa;
+            padding: 1px 4px;
+        }
+
+        /* Legend */
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            font-size: 10px;
+        }
+
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .legend-row {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 14px;
+            border: 1.5px solid #333;
+        }
+
+        .legend-line {
+            width: 30px;
+            height: 2px;
+            background: #333;
+        }
+
+        .legend-line.dashed {
+            background: repeating-linear-gradient(90deg, #333 0px, #333 4px, transparent 4px, transparent 7px);
+        }
+
+        /* Caption */
+        .caption {
+            margin-top: 20px;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .caption strong {
+            font-weight: bold;
+        }
+
+        /* Code references */
+        .refs {
+            margin-top: 25px;
+            padding: 15px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            line-height: 1.8;
+        }
+
+        .refs-title {
+            font-family: 'Times New Roman', Georgia, serif;
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="title">VOS: Multi-Agent Architecture with Proactive Memory System</div>
+        <div class="subtitle">System Architecture Diagram</div>
+
+        <div class="diagram" style="height: 620px;">
+            <!-- SVG Arrows Layer -->
+            <svg class="arrows" viewBox="0 0 940 560" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#333"/>
+                    </marker>
+                    <marker id="arrowhead-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                        <polygon points="0 0, 8 3, 0 6" fill="#999"/>
+                    </marker>
+                </defs>
+
+                <!-- User to API Gateway -->
+                <line x1="95" y1="45" x2="175" y2="45" marker-end="url(#arrowhead)"/>
+                <text x="115" y="38">REST/WS</text>
+
+                <!-- API Gateway to Primary Agent -->
+                <line x1="295" y1="45" x2="390" y2="45" marker-end="url(#arrowhead)"/>
+
+                <!-- Primary Agent to RabbitMQ -->
+                <line x1="470" y1="70" x2="470" y2="115" marker-end="url(#arrowhead)"/>
+
+                <!-- RabbitMQ to Sub-agents -->
+                <line x1="470" y1="155" x2="470" y2="195" marker-end="url(#arrowhead)"/>
+
+                <!-- Sub-agents back to Primary (via RabbitMQ) -->
+                <path d="M 580 230 L 620 230 L 620 135 L 530 135" marker-end="url(#arrowhead)" class="dashed"/>
+                <text x="625" y="185" style="font-size: 8px;">results</text>
+
+                <!-- Primary Agent to Memory Retriever (before LLM) -->
+                <line x1="395" y1="70" x2="395" y2="310" marker-end="url(#arrowhead)" style="stroke: #7c3aed;"/>
+
+                <!-- Memory Retriever to Weaviate -->
+                <line x1="310" y1="355" x2="200" y2="355" marker-end="url(#arrowhead)" style="stroke: #7c3aed;"/>
+
+                <!-- Primary Agent to Memory Creator (after LLM) -->
+                <line x1="545" y1="70" x2="545" y2="310" marker-end="url(#arrowhead)" style="stroke: #7c3aed;"/>
+
+                <!-- Memory Creator to Weaviate -->
+                <line x1="545" y1="380" x2="545" y2="430" style="stroke: #7c3aed;"/>
+                <line x1="545" y1="430" x2="200" y2="430" marker-end="url(#arrowhead)" style="stroke: #7c3aed;"/>
+
+                <!-- Weaviate to Embeddings -->
+                <line x1="150" y1="390" x2="150" y2="480" marker-end="url(#arrowhead)"/>
+
+                <!-- Primary Agent to PostgreSQL -->
+                <line x1="470" y1="70" x2="470" y2="100" style="stroke: transparent;"/>
+                <path d="M 470 70 L 470 100 L 780 100 L 780 355" marker-end="url(#arrowhead)" class="dashed"/>
+                <text x="620" y="93" style="font-size: 8px;">state/history</text>
+
+                <!-- Primary Agent to Gemini -->
+                <line x1="545" y1="45" x2="700" y2="45" marker-end="url(#arrowhead)"/>
+                <text x="600" y="38">LLM calls</text>
+
+                <!-- Memory modules to Gemini (lightweight) -->
+                <path d="M 470 310 L 470 280 L 750 280 L 750 70" marker-end="url(#arrowhead)" class="dashed" style="stroke: #999;"/>
+                <text x="590" y="273" style="font-size: 8px; fill: #999;">flash-lite</text>
+            </svg>
+
+            <!-- User -->
+            <div class="box rounded" style="left: 20px; top: 30px; width: 70px;">
+                User
+                <div class="box-label">Flutter App</div>
+            </div>
+
+            <!-- API Gateway -->
+            <div class="box" style="left: 180px; top: 25px; width: 110px;">
+                API Gateway
+                <div class="box-label">FastAPI</div>
+            </div>
+
+            <!-- Primary Agent -->
+            <div class="box primary" style="left: 395px; top: 25px; width: 150px;">
+                Primary Agent
+                <div class="box-label">Orchestrator</div>
+            </div>
+
+            <!-- RabbitMQ -->
+            <div class="box data" style="left: 410px; top: 120px; width: 120px;">
+                RabbitMQ
+                <div class="box-label">Message Broker</div>
+            </div>
+
+            <!-- Sub-agents Group -->
+            <div class="group" style="left: 340px; top: 195px; width: 240px; height: 95px; border-radius: 4px;">
+                <div class="group-label">Specialized Agents</div>
+            </div>
+
+            <div class="box agent dashed" style="left: 355px; top: 215px; width: 80px; font-size: 9px;">
+                Weather
+            </div>
+            <div class="box agent dashed" style="left: 355px; top: 250px; width: 80px; font-size: 9px;">
+                Notes
+            </div>
+            <div class="box agent dashed" style="left: 450px; top: 215px; width: 80px; font-size: 9px;">
+                Calendar
+            </div>
+            <div class="box agent dashed" style="left: 450px; top: 250px; width: 80px; font-size: 9px;">
+                Search
+            </div>
+
+            <!-- Gemini LLM -->
+            <div class="box" style="left: 705px; top: 25px; width: 110px;">
+                Gemini API
+                <div class="box-label">gemini-3-pro</div>
+            </div>
+
+            <!-- Memory System Group -->
+            <div class="group" style="left: 30px; top: 305px; width: 580px; height: 165px;">
+                <div class="group-label">Proactive Memory System</div>
+            </div>
+
+            <!-- Memory Retriever -->
+            <div class="box memory" style="left: 315px; top: 330px; width: 130px;">
+                Memory Retriever
+                <div class="box-label">Before LLM call</div>
+            </div>
+
+            <!-- Memory Creator -->
+            <div class="box memory" style="left: 470px; top: 330px; width: 120px;">
+                Memory Creator
+                <div class="box-label">After LLM call</div>
+            </div>
+
+            <!-- Weaviate -->
+            <div class="box memory" style="left: 50px; top: 335px; width: 140px;">
+                Weaviate
+                <div class="box-label">Vector Store (768-dim)</div>
+            </div>
+
+            <!-- Memory Schema Mini -->
+            <div style="position: absolute; left: 50px; top: 395px; font-size: 8px; color: #666; width: 140px;">
+                <div style="border-top: 1px solid #ccc; padding-top: 4px;">
+                    <strong>Memory Collection:</strong><br>
+                    content, memory_type, scope,<br>
+                    importance, tags, embeddings
+                </div>
+            </div>
+
+            <!-- Embedding Service -->
+            <div class="box" style="left: 70px; top: 490px; width: 160px;">
+                Embedding Service
+                <div class="box-label">text-embedding-004</div>
+            </div>
+
+            <!-- PostgreSQL -->
+            <div class="box data" style="left: 720px; top: 335px; width: 120px;">
+                PostgreSQL
+                <div class="box-label">State & History</div>
+            </div>
+
+            <!-- Processing Cycle Annotation -->
+            <div style="position: absolute; right: 30px; top: 420px; width: 180px; font-size: 9px; color: #444; border-left: 2px solid #2563eb; padding-left: 10px;">
+                <strong style="color: #2563eb;">Agent Processing Cycle:</strong><br>
+                1. Get notifications<br>
+                2. Memory Retriever runs<br>
+                3. Build context + memories<br>
+                4. Call LLM (gemini-3-pro)<br>
+                5. Execute tool calls<br>
+                6. Memory Creator runs<br>
+                7. Return to idle
+            </div>
+
+            <!-- Memory Flow Annotation -->
+            <div style="position: absolute; left: 220px; top: 395px; width: 160px; font-size: 8px; color: #7c3aed; text-align: center;">
+                ← semantic search<br>
+                <span style="font-size: 7px; color: #999;">queries → embeddings → results</span>
+            </div>
+
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <div class="legend-title">Legend</div>
+            <div class="legend-row">
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #e8f4fc; border-color: #2563eb;"></div>
+                    <span>Primary Agent</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #f3e8ff; border-color: #7c3aed;"></div>
+                    <span>Memory System</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #ecfdf5; border-color: #10b981; border-style: dashed;"></div>
+                    <span>Sub-Agents</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-box" style="background: #fef3c7; border-color: #f59e0b;"></div>
+                    <span>Data Stores</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line"></div>
+                    <span>Data flow</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-line dashed"></div>
+                    <span>Async/Return</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Caption -->
+        <div class="caption">
+            <strong>Figure 1.</strong> VOS multi-agent system architecture showing the primary agent orchestrating specialized sub-agents
+            via RabbitMQ message queues, with proactive memory modules (Retriever and Creator) operating as autonomous
+            "subconscious" processes that semantically search and store memories in Weaviate before and after each LLM call.
+        </div>
+
+        <!-- Code References -->
+        <div class="refs">
+            <div class="refs-title">Implementation References</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                <div><strong>VOSAgent class:</strong> sdk/vos_sdk/core/agent.py:126-1346</div>
+                <div><strong>Processing cycle:</strong> agent.py:702-1041</div>
+                <div><strong>Memory Retriever:</strong> services/tools/memory/memory_retriever.py</div>
+                <div><strong>Memory Creator:</strong> services/tools/memory/memory_creator.py</div>
+                <div><strong>Weaviate schema:</strong> services/tools/memory/weaviate_client.py:116-270</div>
+                <div><strong>Embeddings:</strong> services/tools/memory/embedding_service.py</div>
+                <div><strong>Context builder:</strong> sdk/vos_sdk/core/context.py</div>
+                <div><strong>Memory tools:</strong> services/tools/memory/memory_tools.py</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
