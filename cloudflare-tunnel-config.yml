@@ -1,5 +1,5 @@
-tunnel: 08b965cf-bcdf-4e59-90fd-11defb8f2118
-credentials-file: /etc/cloudflared/08b965cf-bcdf-4e59-90fd-11defb8f2118.json
+tunnel: YOUR_TUNNEL_ID_HERE
+credentials-file: /etc/cloudflared/YOUR_TUNNEL_ID_HERE.json
 
 ingress:
   # Main website - Flutter Frontend

@@ -268,8 +268,9 @@ config/secrets.py
 secrets.json
 .secrets
 
-# Cloudflare tunnel credentials
+# Cloudflare tunnel credentials and config
 cloudflared/*.json
+cloudflare-tunnel-config.yml
 
 # Temporary files
 temp/
